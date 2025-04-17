@@ -45,23 +45,23 @@ const Home = () => {
  
     <section 
       id="hero-section"
-      className="relative h-screen max-h-[800px] text-white overflow-hidden transition-all duration-500"
+      className="relative h-screen max-h-[500px] mb-20 text-white overflow-hidden transition-all duration-500"
     >
       {/* Image de fond */}
       <div className="absolute inset-0 z-0">
         <img
           src={home} // Remplacez par votre image
           alt="Administration universitaire"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-contain object-right"
         />
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0927EB]/90 via-[#0927EB]/50 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0927EB]/100 via-[#0927EB]/95 to-transparent"></div>
       </div>
 
       {/* Contenu */}
       <div className="container mx-auto h-full flex items-center relative z-10">
-        <div className="w-full md:w-1/2 px-6 lg:px-12 py-20">
-          <h1 className="text-3xl lg:text-5xl font-bold mb-6 leading-tight animate-fadeIn">
+        <div className="w-full md:w-1/2 px-6 lg:px-1 py-10">
+          <h1 className="text-xl lg:text-3xl font-bold mb-6 leading-tight animate-fadeIn">
             Simplifiez la gestion académique et des stages
           </h1>
           <p className="text-xl lg:text-2xl mb-8 max-w-lg animate-fadeIn delay-100">
