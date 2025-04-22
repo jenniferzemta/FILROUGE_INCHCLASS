@@ -8,6 +8,8 @@ import Test from './pages/Test';
 import Contact from './pages/public/Contact';
 import About from './pages/public/About';
 import Home from './pages/public/Home';
+import HomePage from './pages/public/HomePage';
+import Services from './pages/public/Services';
 
 function App() {
   return (
@@ -24,6 +26,7 @@ function App() {
           <Route path="/contact" element = {<Contact/>} />
           <Route path="/about" element = {<About/>} />
           <Route path="/home" element = {<Home/>} />
+          <Route path="/services" element = {<Services/>} />
         </Routes>
       
     </Router>

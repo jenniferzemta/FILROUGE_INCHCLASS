@@ -1,53 +1,115 @@
-import { useState } from 'react';
+import { useState , useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-
+import { authService } from '../../services/auth';
+import {useNavigate } from 'react-router-dom';
 import logo from './../../assets/logo.png';
-import { GoogleLogin } from '@react-oauth/google';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFacebook } from '@fortawesome/free-brands-svg-icons';
 import toast from 'react-hot-toast';
+import { departmentService } from '../../services/department';
+// Schéma de validation corrigé
+
+
 
 const schema = yup.object().shape({
   role: yup.string().required('Veuillez sélectionner un rôle'),
   nom: yup.string().required('Veuillez entrer votre nom'),
   prenom: yup.string().required('Veuillez entrer votre prénom'),
   email: yup.string().email('Email invalide').required('Email requis'),
+  department_id: yup.string().required('Veuillez sélectionner un département'),
   password: yup.string().min(6, 'Minimum 6 caractères').required('Mot de passe requis'),
   confirmPassword: yup.string()
+
     .oneOf([yup.ref('password')], 'Les mots de passe ne correspondent pas'),
   numeroBadge: yup.string().when('role', {
-    is: (role) => ['ra', 'rs'].includes(role),
-    then: yup.string().required('Numéro de badge requis'),
+    is: (role) => role === 'ra' || role === 'rs',
+    then: (schema) => schema.required('Numéro de badge requis'),
   }),
   matriculeEnseignant: yup.string().when('role', {
-    is: 'prof',
-    then: yup.string().required('Matricule enseignant requis'),
+    is: 'Enseignant',
+    then: (schema) => schema.required('Matricule enseignant requis'),
   }),
   matriculeEtudiant: yup.string().when('role', {
-    is: 'etudiant',
-    then: yup.string().required('Matricule étudiant requis'),
+    is: 'Etudiant',
+    then: (schema) => schema.required('Matricule étudiant requis'),
   }),
 });
 
+
 export default function Register() {
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+
+  const navigate = useNavigate();
+  const [departments, setDepartments]=useState([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(true);
+  const [error, setError] = useState('');
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } 
+  } = useForm({
     resolver: yupResolver(schema),
   });
-  const [photoPreview, setPhotoPreview] = useState(null);
+  
   const role = watch('role');
 
-  const onSubmit = (data) => {
-    toast.success('Inscription réussie !');
-    console.log(data);
-  };
+  // const onSubmit = (data) => {
+  //   toast.success('Inscription réussie !');
+  //   console.log(data);
+  // };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) setPhotoPreview(URL.createObjectURL(file));
-  };
+  // const handlePhotoChange = (e) => {
+  //   const file = e.target.files[0];
+  //   if (file) setPhotoPreview(URL.createObjectURL(file));
+  // };
 
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const data = await departmentService.getAll();
+        setDepartments(data);
+      } catch (error) {
+        toast.error('Erreur lors du chargement des départements');
+      } finally {
+        setLoadingDepartments(false);
+      }
+    };
+    
+    fetchDepartments();
+  }, []);
+
+
+      // Ajout de la photo si nécessaire
+     // const formData = new FormData();
+      // if (photoPreview) {
+      //   const photoFile = await fetch(photoPreview)
+      //     .then(res => res.blob())
+      //     .then(blob => new File([blob], 'profile.jpg', { type: 'image/jpeg' }));
+      //   formData.append('photo', photoFile);
+      // }
+      // Appel au service d'authentification
+      const onSubmit = async (data) => {
+
+        console.log('Données envoyées:', data);
+          setError(''); // Log des données
+        try {
+          const result = await authService.register(data);
+          toast.success('Inscription réussie!');
+        
+          console.log('Utilisateur enregistré:', result.user);
+          navigate('/dashboard'); 
+        } catch (error) {
+          console.error('Erreur lors de l\'inscription:', error);
+          if (error.response) {
+            console.error('Détails de l\'erreur:', error.response.data);
+            setError(err.message || 'Une erreur est survenue lors de l\'inscription');
+            toast.error('Erreur lors de l\'inscription : ' + (error.response.data.message || 'Erreur inconnue'));
+          } else {
+            toast.error(error.message);
+          }
+        }
+      };
+
+  // ... (reste du code inchangé)
+
+
+  
   return (
     <div className="min-h-screen flex items-center justify-center  bg-gradient-to-br from-[#0927EB] to-[#00C6FB]">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full m-10 max-w-sm border border-gray-100 m-4">
@@ -60,6 +122,12 @@ export default function Register() {
             Créer un compte
           </h1>
           <p className="text-gray-500 font-sans mt-2">Rejoignez notre communauté académique</p>
+            
+      {error && (
+        <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+          {error}
+        </div>
+      )}
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -74,8 +142,8 @@ export default function Register() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
                 <option value="">Sélectionnez votre rôle</option>
-                <option value="etudiant">Étudiant</option>
-                <option value="prof">Enseignant</option>
+                <option value="Etudiant">Étudiant</option>
+                <option value="Enseignant">Enseignant</option>
                 <option value="ra">Responsable Académique</option>
                 <option value="rs">Responsable de Stage</option>
               </select>
@@ -84,37 +152,26 @@ export default function Register() {
               )}
             </div>
 
-            {/* Nouvelle section Remember me ajoutée ici */}
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                Se souvenir de moi
-              </label>
-            </div>
+          
           </div>
 
   {/* Champs Conditionnels */}
   {role === 'ra' || role === 'rs' ? (
-            <div>
-              <label className="block text-sm  pb-2 font-medium text-gray-700 mb-1">
-                Numéro de badge {role === 'ra' ? '(RA)' : '(RS)'} 
-              </label>
-              <input
-                {...register('numeroBadge')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              />
-              {errors.numeroBadge && (
-                <p className="mt-1 text-sm text-red-600">{errors.numeroBadge.message}</p>
-              )}
-            </div>
-          ) : null}
+  <div>
+    <label className="block text-sm pb-2 font-medium text-gray-700 mb-1">
+      Numéro de badge {role === 'ra' ? '(RA)' : '(RS)'}
+    </label>
+    <input
+      {...register('numeroBadge')}
+      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+    />
+    {errors.numeroBadge && (
+      <p className="mt-1 text-sm text-red-600">{errors.numeroBadge.message}</p>
+    )}
+  </div>
+) : null}
 
-          {role === 'prof' && (
+          {role === 'Enseignant' && (
             <div>
               <label className="block text-sm  pb-2 font-medium text-gray-700 mb-1">
                 Matricule 
@@ -129,7 +186,7 @@ export default function Register() {
             </div>
           )}
 
-          {role === 'etudiant' && (
+          {role === 'Etudiant' && (
             <div>
               <label className="block text-sm  pb-2 font-medium text-gray-700 mb-1">
                 Matricule 
@@ -213,9 +270,34 @@ export default function Register() {
               )}
             </div>
           </div>
+{/* department */}
+          <div>
+            <label className="block pb-2 text-sm font-medium text-gray-700 mb-1">
+              Département
+            </label>
+            <select
+              {...register('department_id')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              disabled={loadingDepartments}
+            >
+              <option value="">Sélectionnez un département</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </option>
+              ))}
+            </select>
+            {errors.department_id && (
+              <p className="mt-1 text-sm text-red-600">{errors.department_id.message}</p>
+            )}
+            {loadingDepartments && (
+              <p className="mt-1 text-sm text-gray-500">Chargement des départements...</p>
+            )}
+          </div>
+
 
           {/* Photo de profil */}
-          <div>
+          {/* <div>
             <label className="block  subpixel-antialiased text-sm pb-4 font-medium text-gray-700 mb-1">
               Photo de profil
             </label>
@@ -241,15 +323,26 @@ export default function Register() {
                 />
               </div>
             )}
-          </div>
+          </div> */}
 
         
-
+{/* 
           <button
             type="submit"
             className="w-full bg-[#0923EB] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-md transition duration-200 ease-in-out transform hover:-translate-y-0.5"
           >
             S'inscrire
+          </button> */}
+
+           {/* Bouton de soumission */}
+           <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full bg-[#0923EB] text-white p-3 rounded-lg shadow-md transition ${
+              isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
+          >
+            {isSubmitting ? 'Inscription en cours...' : 'S\'inscrire'}
           </button>
         </form>
 
